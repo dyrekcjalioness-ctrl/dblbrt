@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIONESS — Sprzedaż owoców i warzyw</title>
+
+<style>
+body { font-family: Arial; background: #111; color: white; margin:0; }
+header { background:black; padding:20px; text-align:center; border-bottom:3px solid #2ecc71; }
+h1 { margin:0; color:#2ecc71; }
+.container { max-width:1200px; margin:30px auto; padding:20px; }
+form { background:#1c1c1c; padding:20px; border-radius:8px; margin-bottom:30px; }
+input, select { padding:10px; margin:5px 0; width:100%; border:none; border-radius:5px; }
+label { margin-top:10px; display:block; }
+button { background:#2ecc71; border:none; padding:8px 15px; color:white; cursor:pointer; border-radius:5px; margin-top:10px; }
+button:hover { background:#27ae60; }
+table { width:100%; border-collapse:collapse; background:#1c1c1c; }
+th, td { padding:10px; border-bottom:1px solid #333; text-align:center; }
+th { background:#2ecc71; color:black; }
+.delete-btn { background:red; }
+.edit-btn { background:orange; }
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>LIONESS</h1>
+<p>Sprzedaż owoców i warzyw</p>
+</header>
+
+<div class="container">
+
+<form id="productForm">
+<h3>Dodaj / Edytuj produkt</h3>
+<input type="hidden" id="editIndex">
+
+<label>Nazwa produktu</label>
+<input type="text" id="name" required>
+
+<label>Ilość</label>
+<input type="number" step="0.01" id="quantity" required>
+<select id="quantityUnit">
+<option value="kg">kg</option>
+<option value="szt">szt</option>
+</select>
+
+<label>Cena zakupu</label>
+<input type="number" step="0.01" id="buyPrice" required>
+<select id="buyUnit">
+<option value="kg">za kg</option>
+<option value="szt">za szt</option>
+</select>
+
+<label>Cena sprzedaży</label>
+<input type="number" step="0.01" id="sellPrice" required>
+<select id="sellUnit">
+<option value="kg">za kg</option>
+<option value="szt">za szt</option>
+</select>
+
+<button type="submit">Zapisz</button>
+</form>
+
+<h3>Lista produktów</h3>
+
+<table>
+<thead>
+<tr>
+<th>Nazwa</th>
+<th>Ilość</th>
+<th>Cena zakupu</th>
+<th>Cena sprzedaży</th>
+<th>Zysk / jednostkę</th>
+<th>Zysk całkowity</th>
+<th>Edytuj</th>
+<th>Usuń</th>
+</tr>
+</thead>
+<tbody id="productTable"></tbody>
+</table>
+
+</div>
+
+<script>
+let products = JSON.parse(localStorage.getItem("lionessStoreZysk")) || [];
+
+const form = document.getElementById("productForm");
+const table = document.getElementById("productTable");
+
+function renderProducts() {
+    table.innerHTML = "";
+
+    products.forEach((p, index) => {
+
+        // Zysk / jednostkę
+        let unitProfit = (p.sellPrice - p.buyPrice).toFixed(2);
+
+        // Zysk całkowity = unitProfit × quantity
+        let totalProfit = (unitProfit * p.quantity).toFixed(2);
+
+        table.innerHTML += `
+        <tr>
+            <td>${p.name}</td>
+            <td>${p.quantity} ${p.quantityUnit}</td>
+            <td>${p.buyPrice} zł (${p.buyUnit})</td>
+            <td>${p.sellPrice} zł (${p.sellUnit})</td>
+            <td style="color:${unitProfit>=0?'lime':'red'}">${unitProfit} zł</td>
+            <td style="color:${totalProfit>=0?'lime':'red'}">${totalProfit} zł</td>
+            <td><button class="edit-btn" onclick="editProduct(${index})">✏</button></td>
+            <td><button class="delete-btn" onclick="deleteProduct(${index})">X</button></td>
+        </tr>
+        `;
+    });
+}
+
+function deleteProduct(index) {
+    products.splice(index, 1);
+    localStorage.setItem("lionessStoreZysk", JSON.stringify(products));
+    renderProducts();
+}
+
+function editProduct(index) {
+    const p = products[index];
+    document.getElementById("name").value = p.name;
+    document.getElementById("quantity").value = p.quantity;
+    document.getElementById("quantityUnit").value = p.quantityUnit;
+    document.getElementById("buyPrice").value = p.buyPrice;
+    document.getElementById("buyUnit").value = p.buyUnit;
+    document.getElementById("sellPrice").value = p.sellPrice;
+    document.getElementById("sellUnit").value = p.sellUnit;
+    document.getElementById("editIndex").value = index;
+}
+
+form.addEventListener("submit", function(e){
+    e.preventDefault();
+
+    const name = document.getElementById("name").value;
+    const quantity = parseFloat(document.getElementById("quantity").value);
+    const quantityUnit = document.getElementById("quantityUnit").value;
+    const buyPrice = parseFloat(document.getElementById("buyPrice").value);
+    const buyUnit = document.getElementById("buyUnit").value;
+    const sellPrice = parseFloat(document.getElementById("sellPrice").value);
+    const sellUnit = document.getElementById("sellUnit").value;
+    const editIndex = document.getElementById("editIndex").value;
+
+    const data = {name, quantity, quantityUnit, buyPrice, buyUnit, sellPrice, sellUnit};
+
+    if(editIndex===""){
+        products.push(data);
+    } else {
+        products[editIndex] = data;
+        document.getElementById("editIndex").value="";
+    }
+
+    localStorage.setItem("lionessStoreZysk", JSON.stringify(products));
+    form.reset();
+    renderProducts();
+});
+
+renderProducts();
+</script>
+
+</body>
+</html>
